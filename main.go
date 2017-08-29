@@ -20,13 +20,15 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/nethunteros/installer/android"
-	"github.com/nethunteros/installer/remote"
-	"github.com/pdsouza/toolbox.go/ui"
 	"os"
 	"path"
 	"runtime"
 	"time"
+
+	"./android"
+	"./remote"
+
+	"github.com/pdsouza/toolbox.go/ui"
 )
 
 const (
@@ -117,14 +119,14 @@ func exit(code int) {
 func main() {
 
 	/*
-	Step 1 - Set path to binaries
-	Step 2 - Verify ADB and Fastboot
-	Step 3 - Check USB permissions
-	Step 4 - Identify this is the correct device
-	Step 5 - Detect if device is unlocked, then unlock
-	Step 6 - Download: Nethunter, Oxygen Recovery, Oxygen Factory, TWRP Recovery
-	Step 7 - Boot into Oxygen Recovery
-	Step 8 - Reflash factory
+		Step 1 - Set path to binaries
+		Step 2 - Verify ADB and Fastboot
+		Step 3 - Check USB permissions
+		Step 4 - Identify this is the correct device
+		Step 5 - Detect if device is unlocked, then unlock
+		Step 6 - Download: Nethunter, Oxygen Recovery, Oxygen Factory, TWRP Recovery
+		Step 7 - Boot into Oxygen Recovery
+		Step 8 - Reflash factory
 
 	*/
 
@@ -240,8 +242,7 @@ func main() {
 		exit(SuccessBootloaderUnlocked)
 	}
 
-	// This needs to be replaces with our zip file
-	iEcho("Downloading the latest release for your device (%q)...", product)
+	// Request nethunter
 	req, err = remote.RequestNethunter()
 	if err != nil {
 		eEcho("Failed to download Nethunter: " + err.Error())
@@ -325,7 +326,7 @@ func main() {
 	}
 
 	factory := req.Filename
-	if _, err = os.Stat(factory); os.IsNotExist(err) { 	// err = file is already downloaded
+	if _, err = os.Stat(factory); os.IsNotExist(err) { // err = file is already downloaded
 		progressBar.Title = factory
 		req.ProgressHandler = func(percent float64) {
 			progressBar.Progress = percent
