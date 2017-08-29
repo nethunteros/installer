@@ -18,7 +18,7 @@ VERSION=$(shell git describe --always --dirty)
 LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 
 DIST_DIR=dist
-ZIP_PREFIX=$(DIST_DIR)/maru-installer-$(VERSION)
+ZIP_PREFIX=$(DIST_DIR)/nethunter-installer-$(VERSION)
 ZIP_ASSETS=HELP.txt
 ZIP_FLAGS=-X --junk-paths
 

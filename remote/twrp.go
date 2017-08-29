@@ -22,7 +22,7 @@ import "github.com/pdsouza/toolbox.go/net"
 
 const (
 	TWRPEndpoint      = "https://dl.twrp.me"
-	TWRPVersionPrefix = "twrp-3.1.0-0-"
+	TWRPVersionPrefix = "twrp-3.1.1-1-"
 	TWRPExtension     = ".img"
 )
 

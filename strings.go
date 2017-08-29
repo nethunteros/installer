@@ -17,9 +17,9 @@
 package main
 
 const MsgWelcome = `
-Welcome to the Maru installer!
+Welcome to the Nethunter installer! (forked from MaruOS installer)
 
-In order to install Maru you will need to:
+In order to install Nethunter you will need to:
 
 1. Connect your device to your computer over USB
 
@@ -40,7 +40,7 @@ In order to install Maru you will need to:
     7)  Tap "OK" if you see a dialog asking you to allow
         USB Debugging for your computer's RSA key fingerprint
 
-WARNING: Installing Maru will wipe all your personal data
+WARNING: Installing Nethunter will wipe all your personal data
 so make sure you first back-up anything important!
 `
 
@@ -114,5 +114,5 @@ Installation complete!
 The first boot will take 2-3 mins as Maru sets up your device so please be
 patient.
 
-Rebooting into Maru...
+Rebooting into Nethunter...
 `

@@ -20,8 +20,8 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/maruos/installer/android"
-	"github.com/maruos/installer/remote"
+	"github.com/nethunteros/installer/android"
+	"github.com/nethunteros/installer/remote"
 	"github.com/pdsouza/toolbox.go/ui"
 	"os"
 	"path"
@@ -115,10 +115,23 @@ func exit(code int) {
 }
 
 func main() {
+
+	/*
+	Step 1 - Set path to binaries
+	Step 2 - Verify ADB and Fastboot
+	Step 3 - Check USB permissions
+	Step 4 - Identify this is the correct device
+	Step 5 - Detect if device is unlocked, then unlock
+	Step 6 - Download: Nethunter, Oxygen Recovery, Oxygen Factory, TWRP Recovery
+	Step 7 - Boot into Oxygen Recovery
+	Step 8 - Reflash factory
+
+	*/
+
 	var versionFlag = flag.Bool("version", false, "print the program version")
 	flag.Parse()
 	if *versionFlag == true {
-		iEcho("Maru installer version %s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
+		iEcho("Nethunter installer version %s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
 		exit(Success)
 	}
 
@@ -142,7 +155,7 @@ func main() {
 
 	iEcho(MsgWelcome)
 
-	fmt.Print("Are you ready to install Maru? (yes/no): ")
+	fmt.Print("Are you ready to install Nethunter? (yes/no): ")
 	responseBytes, _, err := reader.ReadLine()
 	if err != nil {
 		iEcho("Failed to read input: ", err.Error())
@@ -199,9 +212,16 @@ func main() {
 
 	iEcho("Identifying your device...")
 	product, err := fastboot.GetProduct()
+
 	if err != nil {
 		eEcho("Failed to get device product info: " + err.Error())
 		exit(ErrorFastboot)
+	}
+
+	// OnePlus references there phones as below
+	if "QC_Reference_Phone" == product {
+		// Assume this is a cheeseburger (OnePlus5)
+		product := "cheeseburger"
 	}
 
 	unlocked, err := fastboot.Unlocked()
@@ -220,11 +240,11 @@ func main() {
 		exit(SuccessBootloaderUnlocked)
 	}
 
+	// This needs to be replaces with our zip file
 	iEcho("Downloading the latest release for your device (%q)...", product)
-	server := remote.NewGitHubClient()
-	req, err := server.RequestLatestRelease(product)
+	req, err = remote.RequestNethunter()
 	if err != nil {
-		eEcho("Failed to request the latest release: " + err.Error())
+		eEcho("Failed to download Nethunter: " + err.Error())
 		exit(ErrorRemote)
 	}
 
@@ -241,7 +261,7 @@ func main() {
 		zip, err = req.Download()
 		if err != nil {
 			eEcho("") // extra newline in case progress bar didn't finish
-			eEcho("Failed to download the latest release: " + err.Error())
+			eEcho("Failed to download Nethunter: " + err.Error())
 			exit(ErrorRemote)
 		}
 	}
@@ -271,28 +291,106 @@ func main() {
 		}
 	}
 
-	// iEcho("EARLY ABORT!")
-	// exit(1)
+	iEcho("Downloading OnePlus5 OxygenOS recovery for your device...")
+	req, err = remote.RequestOxygenRecovery()
+	if err != nil {
+		eEcho("Failed to request TWRP: " + err.Error())
+		exit(ErrorRemote)
+	}
 
-	iEcho("Temporarily booting TWRP to flash Maru update zip...")
+	oxygenrecovery := req.Filename
+	if _, err = os.Stat(twrp); os.IsNotExist(err) { // skip if we already downloaded it
+		progressBar.Title = oxygenrecovery
+		req.ProgressHandler = func(percent float64) {
+			progressBar.Progress = percent
+			fmt.Print("\r" + progressBar.Render())
+			if percent == 1.0 {
+				fmt.Println()
+			}
+		}
+		oxygenrecovery, err = req.Download()
+		if err != nil {
+			eEcho("") // extra newline in case progress bar didn't finish
+			eEcho("Failed to download Oxygen Recovery: " + err.Error())
+			exit(ErrorRemote)
+		}
+	}
+
+	// Download Factory image
+	iEcho("Downloading OnePlus 5 factory for your device...")
+	req, err = remote.RequestFactory()
+	if err != nil {
+		eEcho("Failed to request OnePlus 5 Factory image: " + err.Error())
+		exit(ErrorRemote)
+	}
+
+	factory := req.Filename
+	if _, err = os.Stat(factory); os.IsNotExist(err) { 	// err = file is already downloaded
+		progressBar.Title = factory
+		req.ProgressHandler = func(percent float64) {
+			progressBar.Progress = percent
+			fmt.Print("\r" + progressBar.Render())
+			if percent == 1.0 {
+				fmt.Println()
+			}
+		}
+		factory, err = req.Download()
+		if err != nil {
+			eEcho("") // extra newline in case progress bar didn't finish
+			eEcho("Failed to download factory image: " + err.Error())
+			exit(ErrorRemote)
+		}
+	}
+
+	// Boot into Oxygen Recovery to flash factory images
+	iEcho("Temporarily booting Oxygen recovery to flash latest OxygenOS...")
+	err = fastboot.Boot(oxygenrecovery)
+	if err != nil {
+		eEcho("Failed to boot into Oxygen Recovery: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	// Wait for user to select install form usb option
+	fmt.Print("On OnePlus5, choose Install from USB option in the recovery screen, tap OK to confirm. Press enter when in sideload mode")
+	responseBytes, _, err := reader.ReadLine()
+	if err != nil {
+		iEcho("Failed to read input: ", err.Error())
+		exit(ErrorUserInput)
+	}
+
+	err = adb.Sideload(factory)
+	if err != nil {
+		eEcho("Failed to flash Factory zip file: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	// Wait for user to select install form usb option
+	fmt.Print("Reboot back into fastboot when completed.  Press return when in fastboot mode")
+	responseBytes, _, err := reader.ReadLine()
+	if err != nil {
+		iEcho("Failed to read input: ", err.Error())
+		exit(ErrorUserInput)
+	}
+
+	iEcho("Temporarily booting TWRP to flash Nethunter update zip...")
 	err = fastboot.Boot(twrp)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(10000 * time.Millisecond)
+	time.Sleep(10000 * time.Millisecond) // 10 seconds
 
-	iEcho("Transferring the Maru update zip to your device...")
+	iEcho("Transferring the Nethunter update zip to your device...")
 	if err = adb.PushFg(zip, "/sdcard"); err != nil {
-		eEcho("Failed to push Maru update zip to device: " + err.Error())
+		eEcho("Failed to push Nethunter update zip to device: " + err.Error())
 		exit(ErrorAdb)
 	}
 
-	iEcho("Installing Maru, please keep your device connected...")
+	iEcho("Installing Nethunter, please keep your device connected...")
 	err = adb.Shell("twrp install /sdcard/" + zip)
 	if err != nil {
-		eEcho("Failed to flash Maru update zip: " + err.Error())
+		eEcho("Failed to flash Nethunter update zip: " + err.Error())
 		exit(ErrorTWRP)
 	}
 

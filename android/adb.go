@@ -80,6 +80,14 @@ func (a *AdbClient) Reboot(image string) (err error) {
 	return err
 }
 
+func (a *AdbClient) Sideload(zip string) (err error) {
+	output, err := a.Run("sideload", zip)
+	if err != nil {
+		return NewAdbError(output, err)
+	}
+	return err
+}
+
 func (a *AdbClient) Shell(cmd string) (err error) {
 	output, err := a.Run("shell", cmd)
 	if err != nil {
