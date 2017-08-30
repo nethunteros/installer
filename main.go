@@ -306,27 +306,16 @@ func main() {
 	fmt.Printf("Reboot.  Go through steps of enabling ADB again.  Accept RSA key.  Press enter when ready")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	iEcho("Checking USB permissions...")
-	status, _ := fastboot.Status()
-	if status == android.NoDeviceFound {
-		// We are in ADB mode (normal boot or recovery).
+	verifyAdbStatusOrAbort(&adb)
 
-		verifyAdbStatusOrAbort(&adb)
-
-		iEcho("Rebooting your device into bootloader...")
-		err = adb.Reboot("bootloader")
-		if err != nil {
-			eEcho("Failed to reboot into bootloader: " + err.Error())
-			exit(ErrorAdb)
-		}
-
-		time.Sleep(7000 * time.Millisecond)
-
-		if status, err = fastboot.Status(); err != nil || status == android.NoDeviceFound {
-			eEcho("Failed to reboot device into bootloader!")
-			exit(ErrorAdb)
-		}
+	iEcho("Rebooting your device into bootloader...")
+	err = adb.Reboot("bootloader")
+	if err != nil {
+		eEcho("Failed to reboot into bootloader: " + err.Error())
+		exit(ErrorAdb)
 	}
+
+	time.Sleep(7000 * time.Millisecond)
 
 	// Flash TWRP recovery (no longer need oxygen recovery)
 	err = fastboot.FlashRecovery(twrp)
