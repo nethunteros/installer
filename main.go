@@ -271,9 +271,10 @@ func main() {
 		remote.DownloadURL(twrpurl)
 	}
 
+	time.Sleep(15000 * time.Millisecond) // sleep 15 seconds
+
 	// ------------------------ START INSTALL ------------------ //
 
-	// Boot into Oxygen Recovery to flash factory images
 	iEcho("Flashing OxygenOS recovery in order to flash latest OxygenOS...")
 	// If you don't flash factory recovery first it will try to reboot into TWRP and fail afterwards
 	err = fastboot.FlashRecovery(oxygenrecovery)

@@ -37,7 +37,8 @@ In order to install Nethunter you will need to:
     4)  Go back to the main Settings app
     5)  Tap on "Developer options"
     6)  Ensure that "USB debugging" is enabled
-    7)  Tap "OK" if you see a dialog asking you to allow
+    7)  You may need to restart adb if you don't get an RSA key box (adb kill-server)
+    8)  Tap "OK" if you see a dialog asking you to allow
         USB Debugging for your computer's RSA key fingerprint
 
 WARNING: Installing Nethunter will wipe all your personal data

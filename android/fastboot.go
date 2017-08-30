@@ -77,7 +77,7 @@ func (f *FastbootClient) GetProduct() (product string, err error) {
 }
 
 func (f *FastbootClient) FlashRecovery(image string) (err error) {
-	output, err := f.Run("flash recovery", image)
+	output, err := f.Run("flash", "recovery", image)
 	if err != nil {
 		return NewFastbootError(output, err)
 	}
