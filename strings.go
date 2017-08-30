@@ -112,7 +112,9 @@ device completely boots up and you have re-enabled USB Debugging.
 const MsgSuccess = `
 Installation complete!
 
-The first boot will take 2-3 mins as Maru sets up your device so please be
+Because of SuperSU you may notice a quick reboot in beginning.
+
+The first boot will take 2-3 mins as Nethunter sets up your device so please be
 patient.
 
 Rebooting into Nethunter...

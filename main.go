@@ -271,7 +271,7 @@ func main() {
 		remote.DownloadURL(twrpurl)
 	}
 
-	time.Sleep(15000 * time.Millisecond) // sleep 15 seconds
+	time.Sleep(10000 * time.Millisecond) // sleep 10 seconds
 
 	// ------------------------ START INSTALL ------------------ //
 
@@ -295,7 +295,7 @@ func main() {
 	fmt.Printf("On OnePlus5, select language using volume and power button.\nChoose Install from ADB option in the recovery screen, tap yes to continue.\nPress enter when in sideload mode")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	fmt.Print("Flashing factory zip file.  This can take ~10 minutes.")
+	fmt.Print("Flashing factory zip file.  This can take ~10 minutes.\n")
 
 	err = adb.Sideload(factory)
 	if err != nil {
@@ -304,7 +304,7 @@ func main() {
 	}
 
 	// Wait for user to select install form usb option
-	fmt.Printf("Reboot.  Go through steps of enabling ADB again.  Accept RSA key.  Press enter when ready")
+	fmt.Printf("Reboot if finished.\nGo through steps of enabling ADB again.\nAccept RSA key.\nPress enter when ready")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	verifyAdbStatusOrAbort(&adb)
@@ -316,7 +316,7 @@ func main() {
 		exit(ErrorAdb)
 	}
 
-	time.Sleep(7000 * time.Millisecond)
+	time.Sleep(30000 * time.Millisecond) // 30 seconds
 
 	// Flash TWRP recovery (no longer need oxygen recovery)
 	err = fastboot.FlashRecovery(twrp)
@@ -325,14 +325,14 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
-	iEcho("Temporarily booting TWRP to flash Nethunter update zip (allow system modification)...")
+	iEcho("Temporarily booting TWRP to flash Nethunter update zip.\n Swip to allow system modification in TWRP and wait")
 	err = fastboot.Boot(twrp)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(30000 * time.Millisecond) // 30 seconds
+	time.Sleep(20000 * time.Millisecond) // 20 seconds
 
 	iEcho("Transferring the Nethunter update zip to your device...")
 	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {
@@ -362,13 +362,6 @@ func main() {
 		eEcho("Failed to wipe dalvik: " + err.Error())
 		exit(ErrorTWRP)
 	}
-	time.Sleep(1000 * time.Millisecond)
-	err = adb.Shell("twrp wipe data")
-	if err != nil {
-		eEcho("Failed to wipe data: " + err.Error())
-		exit(ErrorTWRP)
-	}
-	time.Sleep(1000 * time.Millisecond)
 
 	iEcho(MsgSuccess)
 	err = adb.Reboot("")
