@@ -224,7 +224,7 @@ func main() {
 	if "QC_Reference_Phone" == productName {
 		iEcho("OnePlus 5!")
 	} else {
-		eEcho("This is probably the wrong device....")
+		eEcho("This is probably not a OnePlus5....going to continue anyways!? YOLO")
 	}
 
 	unlocked, err := fastboot.Unlocked()
@@ -244,32 +244,57 @@ func main() {
 	}
 
 	// Request nethunter
-	nhzipurl := "https://build.nethunter.com/misc/nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
-	nhzip := remote.DownloadURL(nhzipurl)
+	nhzip := "nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
+	if _, err := os.Stat(nhzip); os.IsNotExist(err) { // If file missing, download
+		nhzipurl := "https://build.nethunter.com/misc/nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
+		remote.DownloadURL(nhzipurl)
+	}
 
 	// Download Recovery Image
-	recoveryimgurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OP5_recovery.img"
-	oxygenrecovery := remote.DownloadURL(recoveryimgurl)
+	oxygenrecovery := "OP5_recovery.img"
+	if _, err := os.Stat(oxygenrecovery); os.IsNotExist(err) { // If file missing, download
+		recoveryimgurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OP5_recovery.img"
+		remote.DownloadURL(recoveryimgurl)
+	}
 
 	// Download Factory Image
-	oxygenurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
-	factory := remote.DownloadURL(oxygenurl)
+	factory := "OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
+	if _, err := os.Stat(factory); os.IsNotExist(err) { // If file missing, download
+		oxygenurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
+		remote.DownloadURL(oxygenurl)
+	}
 
 	// Download TWRP
-	twrpurl := "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
-	twrp := remote.DownloadURL(twrpurl)
+	twrp := "twrp-3.1.1-1-cheeseburger.img"
+	if _, err := os.Stat(factory); os.IsNotExist(err) { // If file missing, download
+		twrpurl := "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
+		remote.DownloadURL(twrpurl)
+	}
+
+	// ------------------------ START INSTALL ------------------ //
 
 	// Boot into Oxygen Recovery to flash factory images
-	iEcho("Temporarily booting Oxygen recovery to flash latest OxygenOS...")
+	iEcho("Flashing OxygenOS recovery in order to flash latest OxygenOS...")
+	// If you don't flash factory recovery first it will try to reboot into TWRP and fail afterwards
+	err = fastboot.FlashRecovery(oxygenrecovery)
+	if err != nil {
+		eEcho("Failed to flash Oxygen Recovery: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	// Boot into the recovery image
+	iEcho("Booting into OxygenOS Recovery")
 	err = fastboot.Boot(oxygenrecovery)
 	if err != nil {
 		eEcho("Failed to boot into Oxygen Recovery: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	// Wait for user to select install form usb option
-	fmt.Print("On OnePlus5, choose Install from USB option in the recovery screen, tap OK to confirm. Press enter when in sideload mode")
+	// Wait for user to select install form usb option in recovery
+	fmt.Printf("On OnePlus5, select language using volume and power button.\nChoose Install from ADB option in the recovery screen, tap yes to continue.\nPress enter when in sideload mode")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
+
+	fmt.Print("Flashing factory zip file.  This can take ~10 minutes.")
 
 	err = adb.Sideload(factory)
 	if err != nil {
@@ -278,17 +303,46 @@ func main() {
 	}
 
 	// Wait for user to select install form usb option
-	fmt.Print("Reboot back into fastboot when completed.  Press return when in fastboot mode")
+	fmt.Printf("Reboot.  Go through steps of enabling ADB again.  Accept RSA key.  Press enter when ready")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	iEcho("Temporarily booting TWRP to flash Nethunter update zip...")
+	iEcho("Checking USB permissions...")
+	status, _ := fastboot.Status()
+	if status == android.NoDeviceFound {
+		// We are in ADB mode (normal boot or recovery).
+
+		verifyAdbStatusOrAbort(&adb)
+
+		iEcho("Rebooting your device into bootloader...")
+		err = adb.Reboot("bootloader")
+		if err != nil {
+			eEcho("Failed to reboot into bootloader: " + err.Error())
+			exit(ErrorAdb)
+		}
+
+		time.Sleep(7000 * time.Millisecond)
+
+		if status, err = fastboot.Status(); err != nil || status == android.NoDeviceFound {
+			eEcho("Failed to reboot device into bootloader!")
+			exit(ErrorAdb)
+		}
+	}
+
+	// Flash TWRP recovery (no longer need oxygen recovery)
+	err = fastboot.FlashRecovery(twrp)
+	if err != nil {
+		eEcho("Failed to flash Oxygen Recovery: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	iEcho("Temporarily booting TWRP to flash Nethunter update zip (allow system modification)...")
 	err = fastboot.Boot(twrp)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(10000 * time.Millisecond) // 10 seconds
+	time.Sleep(30000 * time.Millisecond) // 30 seconds
 
 	iEcho("Transferring the Nethunter update zip to your device...")
 	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/cavaliercoder/grab"
 )
 
-func DownloadURL(dlLink string) string {
+func DownloadURL(dlLink string) {
 	// create client
 	client := grab.NewClient()
 	client.UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.85 Safari/537.36"
@@ -48,7 +48,4 @@ Loop:
 	}
 
 	fmt.Printf("Download saved to ./%v \n", resp.Filename)
-
-	// Return filename
-	return resp.Filename
 }
