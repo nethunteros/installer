@@ -213,7 +213,7 @@ func main() {
 	verifyFastbootStatusOrAbort(&fastboot)
 
 	iEcho("Identifying your device...")
-	product, err := fastboot.GetProduct()
+	productName, err := fastboot.GetProduct()
 
 	if err != nil {
 		eEcho("Failed to get device product info: " + err.Error())
@@ -221,9 +221,10 @@ func main() {
 	}
 
 	// OnePlus references there phones as below
-	if "QC_Reference_Phone" == product {
-		// Assume this is a cheeseburger (OnePlus5)
-		product := "cheeseburger"
+	if "QC_Reference_Phone" == productName {
+		iEcho("OnePlus 5!")
+	} else {
+		eEcho("This is probably the wrong device....")
 	}
 
 	unlocked, err := fastboot.Unlocked()
@@ -243,105 +244,20 @@ func main() {
 	}
 
 	// Request nethunter
-	req, err = remote.RequestNethunter()
-	if err != nil {
-		eEcho("Failed to download Nethunter: " + err.Error())
-		exit(ErrorRemote)
-	}
+	nhzipurl := "https://build.nethunter.com/misc/nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
+	nhzip := remote.DownloadURL(nhzipurl)
 
-	zip := req.Filename
-	if _, err = os.Stat(zip); os.IsNotExist(err) { // skip if we already downloaded it
-		progressBar.Title = zip
-		req.ProgressHandler = func(percent float64) {
-			progressBar.Progress = percent
-			fmt.Print("\r" + progressBar.Render())
-			if percent == 1.0 {
-				fmt.Println()
-			}
-		}
-		zip, err = req.Download()
-		if err != nil {
-			eEcho("") // extra newline in case progress bar didn't finish
-			eEcho("Failed to download Nethunter: " + err.Error())
-			exit(ErrorRemote)
-		}
-	}
+	// Download Recovery Image
+	recoveryimgurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OP5_recovery.img"
+	oxygenrecovery := remote.DownloadURL(recoveryimgurl)
 
-	iEcho("Downloading TWRP for your device...")
-	req, err = remote.RequestTWRP(product)
-	if err != nil {
-		eEcho("Failed to request TWRP: " + err.Error())
-		exit(ErrorRemote)
-	}
+	// Download Factory Image
+	oxygenurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
+	factory := remote.DownloadURL(oxygenurl)
 
-	twrp := req.Filename
-	if _, err = os.Stat(twrp); os.IsNotExist(err) { // skip if we already downloaded it
-		progressBar.Title = twrp
-		req.ProgressHandler = func(percent float64) {
-			progressBar.Progress = percent
-			fmt.Print("\r" + progressBar.Render())
-			if percent == 1.0 {
-				fmt.Println()
-			}
-		}
-		twrp, err = req.Download()
-		if err != nil {
-			eEcho("") // extra newline in case progress bar didn't finish
-			eEcho("Failed to download TWRP: " + err.Error())
-			exit(ErrorRemote)
-		}
-	}
-
-	iEcho("Downloading OnePlus5 OxygenOS recovery for your device...")
-	req, err = remote.RequestOxygenRecovery()
-	if err != nil {
-		eEcho("Failed to request TWRP: " + err.Error())
-		exit(ErrorRemote)
-	}
-
-	oxygenrecovery := req.Filename
-	if _, err = os.Stat(twrp); os.IsNotExist(err) { // skip if we already downloaded it
-		progressBar.Title = oxygenrecovery
-		req.ProgressHandler = func(percent float64) {
-			progressBar.Progress = percent
-			fmt.Print("\r" + progressBar.Render())
-			if percent == 1.0 {
-				fmt.Println()
-			}
-		}
-		oxygenrecovery, err = req.Download()
-		if err != nil {
-			eEcho("") // extra newline in case progress bar didn't finish
-			eEcho("Failed to download Oxygen Recovery: " + err.Error())
-			exit(ErrorRemote)
-		}
-	}
-
-	// Download Factory image
-	iEcho("Downloading OnePlus 5 factory for your device...")
-	req, err = remote.RequestFactory()
-	if err != nil {
-		eEcho("Failed to request OnePlus 5 Factory image: " + err.Error())
-		exit(ErrorRemote)
-	}
-
-	factory := req.Filename
-	if _, err = os.Stat(factory); os.IsNotExist(err) { // err = file is already downloaded
-		progressBar.Title = factory
-		req.ProgressHandler = func(percent float64) {
-			progressBar.Progress = percent
-			fmt.Print("\r" + progressBar.Render())
-			if percent == 1.0 {
-				fmt.Println()
-			}
-		}
-		factory, err = req.Download()
-		if err != nil {
-			eEcho("") // extra newline in case progress bar didn't finish
-			eEcho("Failed to download factory image: " + err.Error())
-			exit(ErrorRemote)
-		}
-	}
+	// Download TWRP
+	twrpurl := "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
+	twrp := remote.DownloadURL(twrpurl)
 
 	// Boot into Oxygen Recovery to flash factory images
 	iEcho("Temporarily booting Oxygen recovery to flash latest OxygenOS...")
@@ -353,11 +269,7 @@ func main() {
 
 	// Wait for user to select install form usb option
 	fmt.Print("On OnePlus5, choose Install from USB option in the recovery screen, tap OK to confirm. Press enter when in sideload mode")
-	responseBytes, _, err := reader.ReadLine()
-	if err != nil {
-		iEcho("Failed to read input: ", err.Error())
-		exit(ErrorUserInput)
-	}
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	err = adb.Sideload(factory)
 	if err != nil {
@@ -367,11 +279,7 @@ func main() {
 
 	// Wait for user to select install form usb option
 	fmt.Print("Reboot back into fastboot when completed.  Press return when in fastboot mode")
-	responseBytes, _, err := reader.ReadLine()
-	if err != nil {
-		iEcho("Failed to read input: ", err.Error())
-		exit(ErrorUserInput)
-	}
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	iEcho("Temporarily booting TWRP to flash Nethunter update zip...")
 	err = fastboot.Boot(twrp)
@@ -383,13 +291,13 @@ func main() {
 	time.Sleep(10000 * time.Millisecond) // 10 seconds
 
 	iEcho("Transferring the Nethunter update zip to your device...")
-	if err = adb.PushFg(zip, "/sdcard"); err != nil {
+	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {
 		eEcho("Failed to push Nethunter update zip to device: " + err.Error())
 		exit(ErrorAdb)
 	}
 
 	iEcho("Installing Nethunter, please keep your device connected...")
-	err = adb.Shell("twrp install /sdcard/" + zip)
+	err = adb.Shell("twrp install /sdcard/" + nhzip)
 	if err != nil {
 		eEcho("Failed to flash Nethunter update zip: " + err.Error())
 		exit(ErrorTWRP)
