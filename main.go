@@ -124,9 +124,9 @@ func main() {
 		Step 3 - Check USB permissions
 		Step 4 - Identify this is the correct device
 		Step 5 - Detect if device is unlocked, then unlock
-		Step 6 - Download: Nethunter, Oxygen Recovery, Oxygen Factory, TWRP Recovery
-		Step 7 - Boot into Oxygen Recovery
-		Step 8 - Reflash factory
+		Step 6 - Download: NethunterOS, TWRP Recovery, Kali Filesystem
+		Step 7 - Boot into TWRP
+		Step 8 - Install NH
 
 	*/
 
@@ -221,10 +221,10 @@ func main() {
 	}
 
 	// OnePlus references there phones as below
-	if "QC_Reference_Phone" == productName {
-		iEcho("OnePlus 5!")
+	if "MSM8974" == productName {
+		iEcho("OnePlus One!")
 	} else {
-		eEcho("This is probably not a OnePlus5....going to continue anyways!? YOLO")
+		eEcho("This is probably not a OnePlus One....going to continue anyways!? YOLO")
 	}
 
 	unlocked, err := fastboot.Unlocked()
@@ -243,31 +243,31 @@ func main() {
 		exit(SuccessBootloaderUnlocked)
 	}
 
-	// Request nethunter
-	nhzip := "nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
+	// Request nethunter OS
+	nhOSzip := "nethunter_bacon-ota-49a0f7db4a.zip"
+	if _, err := os.Stat(nhOSzip); os.IsNotExist(err) { // If file missing, download
+		nhOSzipurl := "https://build.nethunter.com/misc/oneplus1-installer/nethunter_bacon-ota-49a0f7db4a.zip"
+		remote.DownloadURL(nhOSzipurl)
+	}
+
+	// Request nethunter generic fileysstem
+	nhzip := "nethunter-generic-armhf-kalifs-full-bsideme.zip"
 	if _, err := os.Stat(nhzip); os.IsNotExist(err) { // If file missing, download
-		nhzipurl := "https://build.nethunter.com/misc/nethunter-oneplus5-oos-nougat-kalifs-full-20170828_192201.zip"
+		nhzipurl := "https://build.nethunter.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
 		remote.DownloadURL(nhzipurl)
 	}
 
-	// Download Recovery Image
-	oxygenrecovery := "OP5_recovery.img"
-	if _, err := os.Stat(oxygenrecovery); os.IsNotExist(err) { // If file missing, download
-		recoveryimgurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OP5_recovery.img"
-		remote.DownloadURL(recoveryimgurl)
-	}
-
-	// Download Factory Image
-	factory := "OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
-	if _, err := os.Stat(factory); os.IsNotExist(err) { // If file missing, download
-		oxygenurl := "http://oxygenos.oneplus.net.s3.amazonaws.com/OnePlus5Oxygen_23_OTA_013_all_1708032241_1213265a0ad04ecf.zip"
-		remote.DownloadURL(oxygenurl)
+	// Request gapps
+	gapps := "open_gapps-arm-7.1-mini-20170901.zip"
+	if _, err := os.Stat(gapps); os.IsNotExist(err) { // If file missing, download
+		gappsurl := "https://build.nethunter.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
+		remote.DownloadURL(gappsurl)
 	}
 
 	// Download TWRP
-	twrp := "twrp-3.1.1-1-cheeseburger.img"
-	if _, err := os.Stat(factory); os.IsNotExist(err) { // If file missing, download
-		twrpurl := "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
+	twrp := "twrp-3.1.1-0-bacon.img"
+	if _, err := os.Stat(twrp); os.IsNotExist(err) { // If file missing, download
+		twrpurl := "https://dl.twrp.me/bacon/twrp-3.1.1-0-bacon.img"
 		remote.DownloadURL(twrpurl)
 	}
 
@@ -275,32 +275,108 @@ func main() {
 
 	// ------------------------ START INSTALL ------------------ //
 
-	iEcho("Flashing OxygenOS recovery in order to flash latest OxygenOS...")
-	// If you don't flash factory recovery first it will try to reboot into TWRP and fail afterwards
-	err = fastboot.FlashRecovery(oxygenrecovery)
+	time.Sleep(30000 * time.Millisecond) // 30 seconds
+
+	// Flash TWRP recovery
+	err = fastboot.FlashRecovery(twrp)
 	if err != nil {
-		eEcho("Failed to flash Oxygen Recovery: " + err.Error())
+		eEcho("Failed to flash TWRP Recovery: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	// Boot into the recovery image
-	iEcho("Booting into OxygenOS Recovery")
-	err = fastboot.Boot(oxygenrecovery)
+	// Boot into twrp
+	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
+	err = fastboot.Boot(twrp)
 	if err != nil {
-		eEcho("Failed to boot into Oxygen Recovery: " + err.Error())
+		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	// Wait for user to select install form usb option in recovery
-	fmt.Printf("On OnePlus5, select language using volume and power button.\nChoose Install from ADB option in the recovery screen, tap yes to continue.\nPress enter when in sideload mode")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	time.Sleep(20000 * time.Millisecond) // 20 seconds
 
-	fmt.Print("Flashing factory zip file.  This can take ~10 minutes.\n")
-
-	err = adb.Sideload(factory)
+	// Start fresh
+	iEcho("Removing previous installations")
+	time.Sleep(1000 * time.Millisecond)
+	err = adb.Shell("twrp wipe dalvik")
 	if err != nil {
-		eEcho("Failed to flash Factory zip file: " + err.Error())
+		eEcho("Failed to wipe dalvik: " + err.Error())
 		exit(ErrorTWRP)
+	}
+
+	iEcho("Removing previous /data")
+	time.Sleep(1000 * time.Millisecond)
+	err = adb.Shell("twrp wipe data")
+	if err != nil {
+		eEcho("Failed to wipe data: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	iEcho("Removing previous /system")
+	time.Sleep(1000 * time.Millisecond)
+	err = adb.Shell("twrp wipe system")
+	if err != nil {
+		eEcho("Failed to wipe system: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	// Transfer ROM to sdcard then install in TWRP
+	iEcho("Transferring the NethunterOS zip to your device...")
+	if err = adb.PushFg(nhOSzip, "/sdcard"); err != nil {
+		eEcho("Failed to push NethunterOS update zip to device: " + err.Error())
+		exit(ErrorAdb)
+	}
+
+	// Transfer filesystem with app to sdcard then install
+	iEcho("Transferring the Nethunter filesystem zip to your device...")
+	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {
+		eEcho("Failed to push Nethunter update zip to device: " + err.Error())
+		exit(ErrorAdb)
+	}
+
+	// Transfer filesystem with app to sdcard then install
+	iEcho("Transferring the Google Apps zip to your device...")
+	if err = adb.PushFg(gapps, "/sdcard"); err != nil {
+		eEcho("Failed to push Google Apps zip to device: " + err.Error())
+		exit(ErrorAdb)
+	}
+
+	// Start installer for ROM, Gapps, then Nethunter chroot & apps
+	iEcho("Installing NethunterOS please keep your device connected...")
+	err = adb.Shell("twrp install /sdcard/" + nhOSzip)
+	if err != nil {
+		eEcho("Failed to flash Nethunter update zip: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	iEcho("Installing Gapps...")
+	err = adb.Shell("twrp install /sdcard/" + gapps)
+	if err != nil {
+		eEcho("Failed to flash Google Apps: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	// Pause a bit after install or TWRP gets confused
+	time.Sleep(10000 * time.Millisecond)
+
+	iEcho("Wiping your device without wiping /data/media...")
+	err = adb.Shell("twrp wipe cache")
+	if err != nil {
+		eEcho("Failed to wipe cache: " + err.Error())
+		exit(ErrorTWRP)
+	}
+	time.Sleep(1000 * time.Millisecond)
+	err = adb.Shell("twrp wipe dalvik")
+	if err != nil {
+		eEcho("Failed to wipe dalvik: " + err.Error())
+		exit(ErrorTWRP)
+	}
+
+	iEcho(MsgSuccess)
+	err = adb.Reboot("")
+	if err != nil {
+		eEcho("Failed to reboot: " + err.Error())
+		iEcho("\nPlease reboot your device manually by going to Reboot > System > Do Not Install")
+		exit(ErrorAdb)
 	}
 
 	// Wait for user to select install form usb option
@@ -318,50 +394,23 @@ func main() {
 
 	time.Sleep(30000 * time.Millisecond) // 30 seconds
 
-	// Flash TWRP recovery (no longer need oxygen recovery)
-	err = fastboot.FlashRecovery(twrp)
-	if err != nil {
-		eEcho("Failed to flash Oxygen Recovery: " + err.Error())
-		exit(ErrorTWRP)
-	}
-
-	iEcho("Temporarily booting TWRP to flash Nethunter update zip.\n Swip to allow system modification in TWRP and wait")
+	// Boot into twrp
+	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
 	err = fastboot.Boot(twrp)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(20000 * time.Millisecond) // 20 seconds
-
-	iEcho("Transferring the Nethunter update zip to your device...")
-	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {
-		eEcho("Failed to push Nethunter update zip to device: " + err.Error())
-		exit(ErrorAdb)
-	}
-
-	iEcho("Installing Nethunter, please keep your device connected...")
+	time.Sleep(20000 * time.Millisecond)
+	iEcho("Installing Nethunter filesystem, please keep your device connected...")
 	err = adb.Shell("twrp install /sdcard/" + nhzip)
 	if err != nil {
 		eEcho("Failed to flash Nethunter update zip: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	// Pause a bit after install or TWRP gets confused
-	time.Sleep(2000 * time.Millisecond)
-
-	iEcho("Wiping your device without wiping /data/media...")
-	err = adb.Shell("twrp wipe cache")
-	if err != nil {
-		eEcho("Failed to wipe cache: " + err.Error())
-		exit(ErrorTWRP)
-	}
-	time.Sleep(1000 * time.Millisecond)
-	err = adb.Shell("twrp wipe dalvik")
-	if err != nil {
-		eEcho("Failed to wipe dalvik: " + err.Error())
-		exit(ErrorTWRP)
-	}
+	time.Sleep(30000 * time.Millisecond) // 30 seconds
 
 	iEcho(MsgSuccess)
 	err = adb.Reboot("")
