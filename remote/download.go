@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cavaliercoder/grab"
+	"github.com/fatih/color"
 )
 
 func DownloadURL(dlLink string) {
@@ -18,7 +19,7 @@ func DownloadURL(dlLink string) {
 	req.HTTPRequest.Header.Set("Referer", dlLink)
 
 	// start download
-	fmt.Printf("Downloading %v...\n", req.URL())
+	color.Green("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
 	fmt.Printf("  %v\n", resp.HTTPResponse.Status)
 
@@ -30,7 +31,7 @@ Loop:
 	for {
 		select {
 		case <-t.C:
-			fmt.Printf("  transferred %v / %v bytes (%.2f%%)\n",
+			fmt.Printf("\r  transferred %v / %v bytes (%.2f%%)\n",
 				resp.BytesComplete(),
 				resp.Size,
 				100*resp.Progress())

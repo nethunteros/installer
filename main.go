@@ -28,6 +28,7 @@ import (
 	"./android"
 	"./remote"
 
+	"github.com/fatih/color"
 	"github.com/pdsouza/toolbox.go/ui"
 )
 
@@ -174,7 +175,7 @@ func main() {
 	iEcho("Verifying installer tools...")
 	adb := android.NewAdbClient()
 	if _, err := adb.Status(); err != nil {
-		eEcho("Failed to run adb: " + err.Error())
+		color.Red("Failed to run adb: " + err.Error())
 		eEcho(MsgIncompleteZip)
 		exit(ErrorPrereqs)
 	}
@@ -250,6 +251,13 @@ func main() {
 		remote.DownloadURL(nhOSzipurl)
 	}
 
+	// Download OnePlus5 Firmware
+	op5firmware := "oneplus_5_oxygenos_4.5.10_firmware.zip"
+	if _, err := os.Stat(op5firmware); os.IsNotExist(err) { // If file missing, download
+		op5firmwareurl := "https://build.nethunter.com/misc/oneplus5_installer/oneplus_5_oxygenos_4.5.10_firmware.zip"
+		remote.DownloadURL(op5firmwareurl)
+	}
+
 	// Request nethunter generic fileysstem
 	nhzip := "nethunter-generic-armhf-kalifs-full-bsideme.zip"
 	if _, err := os.Stat(nhzip); os.IsNotExist(err) { // If file missing, download
@@ -258,9 +266,9 @@ func main() {
 	}
 
 	// Request gapps
-	gapps := "open_gapps-arm-7.1-mini-20170901.zip"
+	gapps := "open_gapps-arm64-7.1-nano-20170913.zip"
 	if _, err := os.Stat(gapps); os.IsNotExist(err) { // If file missing, download
-		gappsurl := "https://build.nethunter.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
+		gappsurl := "https://build.nethunter.com/misc/oneplus5_installer/open_gapps-arm64-7.1-nano-20170913.zip"
 		remote.DownloadURL(gappsurl)
 	}
 
@@ -319,6 +327,13 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
+	// Transfer Firmware
+	iEcho("Transferring the OnePlus 5 firmware to your device...")
+	if err = adb.PushFg(op5firmware, "/sdcard"); err != nil {
+		eEcho("Failed to push OnePlus 5 firmware update zip to device: " + err.Error())
+		exit(ErrorAdb)
+	}
+
 	// Transfer ROM to sdcard then install in TWRP
 	iEcho("Transferring the NethunterOS zip to your device...")
 	if err = adb.PushFg(nhOSzip, "/sdcard"); err != nil {
@@ -338,6 +353,14 @@ func main() {
 	if err = adb.PushFg(gapps, "/sdcard"); err != nil {
 		eEcho("Failed to push Google Apps zip to device: " + err.Error())
 		exit(ErrorAdb)
+	}
+
+	// Start installer with OnePlus 5 firmware
+	iEcho("Installing OnePlus 5 firmware to device ...")
+	err = adb.Shell("twrp install /sdcard/" + op5firmware)
+	if err != nil {
+		eEcho("Failed to flash firmware update zip: " + err.Error())
+		exit(ErrorTWRP)
 	}
 
 	// Start installer for ROM, Gapps, then Nethunter chroot & apps
@@ -380,7 +403,7 @@ func main() {
 	}
 
 	// Wait for user to select install form usb option
-	fmt.Printf("Reboot if finished.\nGo through steps of enabling ADB again.\nAccept RSA key.\nPress enter when ready")
+	fmt.Printf("Almost there!\nBefore you continue, go through steps of enabling ADB again once device restarts.\nAccept RSA key.\nPress enter when ready")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	verifyAdbStatusOrAbort(&adb)
