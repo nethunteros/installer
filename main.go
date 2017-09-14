@@ -221,10 +221,10 @@ func main() {
 	}
 
 	// OnePlus references there phones as below
-	if "hammerhead" == productName {
-		iEcho("Nexus5!")
+	if "QC_Reference_Phone" == productName {
+		iEcho("Detected OnePlus 5 (cheeseburger)!")
 	} else {
-		eEcho("You better hope this is an nexus5....going to continue anyways!? YOLO")
+		eEcho("You better hope this is an OnePlus 5....going to continue anyways!? YOLO")
 	}
 
 	unlocked, err := fastboot.Unlocked()
@@ -244,9 +244,9 @@ func main() {
 	}
 
 	// Request nethunter OS
-	nhOSzip := "nethunter_hammerhead-ota-f91313a12f.zip"
+	nhOSzip := "lineage-14.1-20170913-UNOFFICIAL-cheeseburger.zip"
 	if _, err := os.Stat(nhOSzip); os.IsNotExist(err) { // If file missing, download
-		nhOSzipurl := "https://build.nethunter.com/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
+		nhOSzipurl := "https://build.nethunter.com/misc/oneplus5_installer/lineage-14.1-20170913-UNOFFICIAL-cheeseburger.zip"
 		remote.DownloadURL(nhOSzipurl)
 	}
 
@@ -265,9 +265,9 @@ func main() {
 	}
 
 	// Download TWRP
-	twrp := "twrp-3.1.1-0-hammerhead.img"
+	twrp := "twrp-3.1.1-1-cheeseburger.img"
 	if _, err := os.Stat(twrp); os.IsNotExist(err) { // If file missing, download
-		twrpurl := "https://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
+		twrpurl := "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
 		remote.DownloadURL(twrpurl)
 	}
 
