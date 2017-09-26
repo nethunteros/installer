@@ -259,9 +259,9 @@ func main() {
 	}
 
 	// Request nethunter generic fileysstem
-	nhzip := "nethunter-generic-armhf-kalifs-full-bsideme.zip"
+	nhzip := "nethunter-generic-arm64-kalifs-full-201709.zip"
 	if _, err := os.Stat(nhzip); os.IsNotExist(err) { // If file missing, download
-		nhzipurl := "https://build.nethunter.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
+		nhzipurl := "https://build.nethunter.com/misc/oneplus5_installer/nethunter-generic-arm64-kalifs-full-201709.zip"
 		remote.DownloadURL(nhzipurl)
 	}
 
@@ -293,14 +293,14 @@ func main() {
 	}
 
 	// Boot into twrp
-	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
+	iEcho("Booting TWRP to flash Nethunter update zip.")
 	err = fastboot.Boot(twrp)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(20000 * time.Millisecond) // 20 seconds
+	time.Sleep(70000 * time.Millisecond) // 70 seconds (oneplus 5 takes longer)
 
 	// Start fresh
 	iEcho("Removing previous installations")
