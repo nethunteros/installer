@@ -31,7 +31,7 @@ $(DIST_DIR):
 	mkdir -p $(DIST_DIR)
 
 linux: $(DIST_DIR)
-	GOOS=$@ GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY)
+	GOOS=$@ GOARCH=amd64 GOARM=7 go build $(LDFLAGS) -o $(BINARY)
 	zip $(ZIP_FLAGS) $(ZIP_PREFIX)-$@.zip $(BINARY) prebuilts/$@/* $(ZIP_ASSETS)
 
 darwin: $(DIST_DIR)

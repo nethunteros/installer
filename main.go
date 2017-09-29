@@ -294,6 +294,11 @@ func main() {
 
 	time.Sleep(20000 * time.Millisecond) // 20 seconds
 
+
+	// Wait for TWRP
+	fmt.Printf("Press enter when TWRP is fully loaded & ready")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+
 	// Start fresh
 	iEcho("Removing previous installations")
 	time.Sleep(1000 * time.Millisecond)
