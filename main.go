@@ -103,6 +103,11 @@ func progressCallback(percent float64) {
 	}
 }
 
+func waitForOpKey(msg string) {
+	fmt.Printf(msg)
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
 func exit(code int) {
 	// When run by double-clicking the executable on windows, the command
 	// prompt will immediately exit upon program completion, making it hard for
@@ -226,6 +231,8 @@ func main() {
 	} else {
 		eEcho("You better hope this is an nexus5....going to continue anyways!? YOLO")
 	}
+    
+    waitForOpKey("Press enter to continue with bootloader checks") // not sure about the sentence here
 
 	unlocked, err := fastboot.Unlocked()
 	if err != nil {
@@ -270,12 +277,8 @@ func main() {
 		twrpurl := "https://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
 		remote.DownloadURL(twrpurl)
 	}
-
-	time.Sleep(10000 * time.Millisecond) // sleep 10 seconds
-
-	// ------------------------ START INSTALL ------------------ //
-
-	time.Sleep(30000 * time.Millisecond) // 30 seconds
+    
+	waitForOpKey("Press enter to start the installation")
 
 	// Flash TWRP recovery
 	err = fastboot.FlashRecovery(twrp)
@@ -292,12 +295,8 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(20000 * time.Millisecond) // 20 seconds
-
-
 	// Wait for TWRP
-	fmt.Printf("Press enter when TWRP is fully loaded & ready")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	waitForOpKey("Press enter when TWRP is fully loaded & ready")
 
 	// Start fresh
 	iEcho("Removing previous installations")
@@ -361,6 +360,7 @@ func main() {
 	}
 
 	// Pause a bit after install or TWRP gets confused
+	// is this allways enought? 
 	time.Sleep(10000 * time.Millisecond)
 
 	iEcho("Wiping your device without wiping /data/media...")
@@ -383,10 +383,8 @@ func main() {
 		iEcho("\nPlease reboot your device manually by going to Reboot > System > Do Not Install")
 		exit(ErrorAdb)
 	}
-
 	// Wait for user to select install form usb option
-	fmt.Printf("Reboot if finished.\nGo through steps of enabling ADB again.\nAccept RSA key.\nPress enter when ready")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	waitForOpKey("Reboot if finished.\nGo through steps of enabling ADB again.\nAccept RSA key.\nPress enter when ready")
 
 	verifyAdbStatusOrAbort(&adb)
 
@@ -397,7 +395,7 @@ func main() {
 		exit(ErrorAdb)
 	}
 
-	time.Sleep(30000 * time.Millisecond) // 30 seconds
+	time.Sleep(30000 * time.Millisecond) // 30 seconds // maybe add waitForOpKey here also?
 
 	// Boot into twrp
 	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
@@ -407,7 +405,7 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(20000 * time.Millisecond)
+	time.Sleep(20000 * time.Millisecond) // maybe add waitForOpKey here also?
 	iEcho("Installing Nethunter filesystem, please keep your device connected...")
 	err = adb.Shell("twrp install /sdcard/" + nhzip)
 	if err != nil {
@@ -415,7 +413,7 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
-	time.Sleep(30000 * time.Millisecond) // 30 seconds
+	time.Sleep(30000 * time.Millisecond) // 30 seconds // maybe add waitForOpKey here also?
 
 	iEcho(MsgSuccess)
 	err = adb.Reboot("")
