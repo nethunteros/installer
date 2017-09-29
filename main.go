@@ -231,6 +231,8 @@ func main() {
 	} else {
 		eEcho("You better hope this is an nexus5....going to continue anyways!? YOLO")
 	}
+    
+    waitForOpKey("Press enter to continue with bootloader checks") // not sure about the sentence here
 
 	unlocked, err := fastboot.Unlocked()
 	if err != nil {
