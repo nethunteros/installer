@@ -5,7 +5,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,8 @@
 package main
 
 import (
+	"./android"
+	"./remote"
 	"bufio"
 	"flag"
 	"fmt"
@@ -24,9 +26,6 @@ import (
 	"path"
 	"runtime"
 	"time"
-
-	"./android"
-	"./remote"
 
 	"github.com/pdsouza/toolbox.go/ui"
 )
@@ -122,6 +121,7 @@ func exit(code int) {
 }
 
 func main() {
+	nhDevices := readDevicesConfig()
 
 	/*
 		Step 1 - Set path to binaries
@@ -161,8 +161,12 @@ func main() {
 	}
 
 	iEcho(MsgWelcome)
-
-	fmt.Print("Are you ready to install Nethunter? (yes/no): ")
+	// (We can remove this later)
+	eEcho("The installer supports the following devices: ")
+	for _, d := range nhDevices.Device {
+		fmt.Printf("    - %s (%s)\n", d.Common_name, d.Product_name)
+	}
+	fmt.Print("\nAre you ready to install Nethunter? (yes/no): ")
 	responseBytes, _, err := reader.ReadLine()
 	if err != nil {
 		iEcho("Failed to read input: ", err.Error())
@@ -224,20 +228,24 @@ func main() {
 		eEcho("Failed to get device product info: " + err.Error())
 		exit(ErrorFastboot)
 	}
+	currDevice := findDeviceConfig(nhDevices, productName)
 
-	// OnePlus references there phones as below
-	if "hammerhead" == productName {
-		iEcho("Nexus5!")
+	// Check that we have the device config in the file
+
+	if currDevice.Common_name != "" {
+		fmt.Printf("Device and config found, using %s (%s) configuration and endpoints\n", currDevice.Common_name, currDevice.Product_name)
 	} else {
-		eEcho("You better hope this is an nexus5....going to continue anyways!? YOLO")
+		eEcho("Device config not found lol! Bye.")
+		exit(1)
 	}
-    
-    waitForOpKey("Press enter to continue with bootloader checks") // not sure about the sentence here
+
+	waitForOpKey("Press enter to continue with bootloader checks") // not sure about the sentence here
 
 	unlocked, err := fastboot.Unlocked()
 	if err != nil {
 		iEcho("Warning: unable to determine bootloader lock state: " + err.Error())
 	}
+
 	if !unlocked {
 		iEcho("Unlocking bootloader, you will need to confirm this on your device...")
 		err = fastboot.Unlock()
@@ -251,37 +259,30 @@ func main() {
 	}
 
 	// Request nethunter OS
-	nhOSzip := "nethunter_hammerhead-ota-f91313a12f.zip"
-	if _, err := os.Stat(nhOSzip); os.IsNotExist(err) { // If file missing, download
-		nhOSzipurl := "https://build.nethunter.com/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
-		remote.DownloadURL(nhOSzipurl)
+	if _, err := os.Stat(currDevice.Nhos_file); os.IsNotExist(err) { // If file missing, download
+		remote.DownloadURL(currDevice.Nhos_url)
 	}
 
 	// Request nethunter generic fileysstem
-	nhzip := "nethunter-generic-armhf-kalifs-full-bsideme.zip"
-	if _, err := os.Stat(nhzip); os.IsNotExist(err) { // If file missing, download
-		nhzipurl := "https://build.nethunter.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
-		remote.DownloadURL(nhzipurl)
+	if _, err := os.Stat(currDevice.Nhfs_file); os.IsNotExist(err) { // If file missing, download
+		remote.DownloadURL(currDevice.Nhfs_url)
 	}
 
 	// Request gapps
-	gapps := "open_gapps-arm-7.1-mini-20170901.zip"
-	if _, err := os.Stat(gapps); os.IsNotExist(err) { // If file missing, download
-		gappsurl := "https://build.nethunter.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
-		remote.DownloadURL(gappsurl)
+	if _, err := os.Stat(currDevice.Gapps_file); os.IsNotExist(err) { // If file missing, download
+		remote.DownloadURL(currDevice.Gapps_url)
 	}
 
 	// Download TWRP
-	twrp := "twrp-3.1.1-0-hammerhead.img"
-	if _, err := os.Stat(twrp); os.IsNotExist(err) { // If file missing, download
-		twrpurl := "https://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
-		remote.DownloadURL(twrpurl)
+	if _, err := os.Stat(currDevice.Twrp_file); os.IsNotExist(err) { // If file missing, download
+		remote.DownloadURL(currDevice.Twrp_url)
 	}
-    
+
 	waitForOpKey("Press enter to start the installation")
 
 	// Flash TWRP recovery
-	err = fastboot.FlashRecovery(twrp)
+	iEcho("Starting TWRP flash")
+	err = fastboot.FlashRecovery(currDevice.Twrp_file)
 	if err != nil {
 		eEcho("Failed to flash TWRP Recovery: " + err.Error())
 		exit(ErrorTWRP)
@@ -289,7 +290,7 @@ func main() {
 
 	// Boot into twrp
 	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
-	err = fastboot.Boot(twrp)
+	err = fastboot.Boot(currDevice.Twrp_file)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
@@ -325,44 +326,43 @@ func main() {
 
 	// Transfer ROM to sdcard then install in TWRP
 	iEcho("Transferring the NethunterOS zip to your device...")
-	if err = adb.PushFg(nhOSzip, "/sdcard"); err != nil {
+	if err = adb.PushFg(currDevice.Nhos_file, "/sdcard"); err != nil {
 		eEcho("Failed to push NethunterOS update zip to device: " + err.Error())
 		exit(ErrorAdb)
 	}
 
 	// Transfer filesystem with app to sdcard then install
 	iEcho("Transferring the Nethunter filesystem zip to your device...")
-	if err = adb.PushFg(nhzip, "/sdcard"); err != nil {
+	if err = adb.PushFg(currDevice.Nhfs_file, "/sdcard"); err != nil {
 		eEcho("Failed to push Nethunter update zip to device: " + err.Error())
 		exit(ErrorAdb)
 	}
 
 	// Transfer filesystem with app to sdcard then install
 	iEcho("Transferring the Google Apps zip to your device...")
-	if err = adb.PushFg(gapps, "/sdcard"); err != nil {
+	if err = adb.PushFg(currDevice.Gapps_file, "/sdcard"); err != nil {
 		eEcho("Failed to push Google Apps zip to device: " + err.Error())
 		exit(ErrorAdb)
 	}
 
 	// Start installer for ROM, Gapps, then Nethunter chroot & apps
 	iEcho("Installing NethunterOS please keep your device connected...")
-	err = adb.Shell("twrp install /sdcard/" + nhOSzip)
+	err = adb.Shell("twrp install /sdcard/" + currDevice.Nhos_file)
 	if err != nil {
 		eEcho("Failed to flash Nethunter update zip: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
 	iEcho("Installing Gapps...")
-	err = adb.Shell("twrp install /sdcard/" + gapps)
+	err = adb.Shell("twrp install /sdcard/" + currDevice.Gapps_file)
 	if err != nil {
 		eEcho("Failed to flash Google Apps: " + err.Error())
 		exit(ErrorTWRP)
 	}
 
 	// Pause a bit after install or TWRP gets confused
-	// is this allways enought? 
+	// is this allways enought?
 	time.Sleep(10000 * time.Millisecond)
-
 	iEcho("Wiping your device without wiping /data/media...")
 	err = adb.Shell("twrp wipe cache")
 	if err != nil {
@@ -399,7 +399,7 @@ func main() {
 
 	// Boot into twrp
 	iEcho("Booting TWRP to flash Nethunter update zip.\n Swipe to allow system modification in TWRP and wait")
-	err = fastboot.Boot(twrp)
+	err = fastboot.Boot(currDevice.Twrp_file)
 	if err != nil {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
@@ -407,7 +407,7 @@ func main() {
 
 	time.Sleep(20000 * time.Millisecond) // maybe add waitForOpKey here also?
 	iEcho("Installing Nethunter filesystem, please keep your device connected...")
-	err = adb.Shell("twrp install /sdcard/" + nhzip)
+	err = adb.Shell("twrp install /sdcard/" + currDevice.Nhfs_file)
 	if err != nil {
 		eEcho("Failed to flash Nethunter update zip: " + err.Error())
 		exit(ErrorTWRP)
