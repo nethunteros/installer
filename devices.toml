@@ -1,0 +1,52 @@
+# This is a TOML document for nethunter device configs.
+
+[[device]]
+
+common_name = "Nexus 5"
+product_name = "hammerhead"
+
+nhos_file = "nethunter_hammerhead-ota-f91313a12f.zip"
+nhos_url = "https://build.nethunter.com/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
+
+nhfs_file = "nethunter-generic-armhf-kalifs-full-bsideme.zip"
+nhfs_url = "https://build.nethunter.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
+
+gapps_file = "open_gapps-arm-7.1-mini-20170901.zip"
+gapps_url = "https://build.nethunter.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
+
+twrp_file = "twrp-3.1.1-0-hammerhead.img"
+twrp_url = "https://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
+
+[[device]]
+
+common_name = "Nexus 5X fixme"
+product_name = "bullhead"
+
+nhos_file = "BULLHEAD_FIXME.zip"
+nhos_url = "BULLHEAD_FIXME/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
+
+nhfs_file = "BULLHEAD_FIXME-armhf-kalifs-full-bsideme.zip"
+nhfs_url = "BULLHEAD_FIXME.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
+
+gapps_file = "BULLHEAD_FIXME-arm-7.1-BULLHEAD-20170901.zip"
+gapps_url = "BULLHEAD_FIXME://build.BULLHEAD.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
+
+twrp_file = "BULLHEAD_FIXME-3.1.1-0-hammerhead.img"
+twrp_url = "BULLHEAD_FIXME://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
+
+[[device]]
+
+common_name = "OP5 fixme"
+product_name = "IDONTKNOW"
+
+nhos_file = "OP5_FIXME.zip"
+nhos_url = "OP5_FIXME/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
+
+nhfs_file = "OP5_FIXME-armhf-kalifs-full-bsideme.zip"
+nhfs_url = "OP5_FIXME.com/misc/oneplus1-installer/nethunter-generic-armhf-kalifs-full-bsideme.zip"
+
+gapps_file = "OP5_FIXME-arm-7.1-OP5-20170901.zip"
+gapps_url = "OP5_FIXME://build.OP5.com/misc/oneplus1-installer/open_gapps-arm-7.1-mini-20170901.zip"
+
+twrp_file = "OP5_FIXME-3.1.1-0-hammerhead.img"
+twrp_url = "OP5_FIXME://dl.twrp.me/hammerhead/twrp-3.1.1-0-hammerhead.img"
