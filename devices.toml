@@ -5,8 +5,8 @@
 common_name = "Nexus 5"
 product_name = "hammerhead"
 
-nhos_file = "lineage-14.1-20171006-UNOFFICIAL-hammerhead.zip"
-nhos_url = "https://build.nethunter.com/installer/nexus5/lineage-14.1-20171006-UNOFFICIAL-hammerhead.zip"
+nhos_file = "lineage-14.1-20171008-UNOFFICIAL-hammerhead.zip"
+nhos_url = "https://build.nethunter.com/installer/nexus5/lineage-14.1-20171008-UNOFFICIAL-hammerhead.zip"
 
 nhfs_file = "update-nethunter-generic-armhf-20171007_215146.zip"
 nhfs_url = "https://build.nethunter.com/installer/generic/update-nethunter-generic-armhf-20171007_215146.zip"
@@ -37,10 +37,10 @@ twrp_url = "https://dl.twrp.me/bullhead/twrp-3.1.1-0-bullhead.img"
 [[device]]
 
 common_name = "OnePlus 5"
-product_name = "QC_Reference_Phone"
+product_name = "OnePlus 5"
 
-nhos_file = "OP5_FIXME.zip"
-nhos_url = "OP5_FIXME/misc/nexus5_installer/nethunter_hammerhead-ota-f91313a12f.zip"
+nhos_file = "lineage-14.1-20171008-UNOFFICIAL-cheeseburger.zip"
+nhos_url = "https://build.nethunter.com/installer/oneplus5/lineage-14.1-20171008-UNOFFICIAL-cheeseburger.zip"
 
 nhfs_file = "update-nethunter-generic-armhf-20171007_215146.zip"
 nhfs_url = "https://build.nethunter.com/installer/generic/update-nethunter-generic-armhf-20171007_215146.zip"
@@ -50,3 +50,6 @@ gapps_url = "https://build.nethunter.com/installer/gapps/open_gapps-arm-7.1-mini
 
 twrp_file = "twrp-3.1.1-1-cheeseburger.img"
 twrp_url = "https://dl.twrp.me/cheeseburger/twrp-3.1.1-1-cheeseburger.img"
+
+extra_file = "oneplus_5_oxygenos_4.5.10_firmware.zip"
+extra_url = "https://build.nethunter.com/installer/oneplus5/oneplus_5_oxygenos_4.5.10_firmware.zip"

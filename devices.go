@@ -18,8 +18,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"io/ioutil"
+
+	"github.com/BurntSushi/toml"
 )
 
 type device struct {
@@ -37,6 +38,9 @@ type device struct {
 
 	Twrp_file string
 	Twrp_url  string
+
+	Extra_file string
+	Extra_url  string
 }
 
 type devices struct {

@@ -110,12 +110,35 @@ device completely boots up and you have re-enabled USB Debugging.
 `
 
 const MsgSuccess = `
-Installation complete!
-
-Because of SuperSU you may notice a quick reboot in beginning.
+Installation of base OS complete!
 
 The first boot will take 2-3 mins as Nethunter sets up your device so please be
 patient.
 
-Rebooting into Nethunter...
+Rebooting into NethunterOS...were almost there!  We still need to install Kali filesystem!
+`
+
+const MsgReenable = `
+Please reenable ADB one more time to flash the filesystem to device.
+
+1. Connect your device to your computer over USB
+
+2. Enable USB Debugging on your device:
+
+    1)  Go to the Settings app and scroll down to
+        the System section
+
+        NOTE: If you already have "Developer options"
+        under System then go directly to #5
+
+    2)  Tap on "About phone"
+    3)  Tap "Build number" 7 times until you get a message
+        that says you are now a developer
+    4)  Go back to the main Settings app
+    5)  Tap on "Developer options"
+    6)  Ensure that "USB debugging" is enabled
+    7)  You may need to restart adb if you don't get an RSA key box (adb kill-server)
+    8)  Tap "OK" if you see a dialog asking you to allow
+        USB Debugging for your computer's RSA key fingerprint
+
 `

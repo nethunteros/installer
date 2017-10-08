@@ -19,7 +19,7 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 
 DIST_DIR=dist
 ZIP_PREFIX=$(DIST_DIR)/nethunter-installer-$(VERSION)
-ZIP_ASSETS=HELP.txt
+ZIP_ASSETS=HELP.txt devices.toml
 ZIP_FLAGS=-X --junk-paths
 
 all: linux darwin windows default

@@ -17,16 +17,19 @@
 package main
 
 import (
-	"./android"
-	"./remote"
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"runtime"
 	"time"
 
+	"./android"
+	"./remote"
+
+	"github.com/dixonwille/wmenu"
 	"github.com/pdsouza/toolbox.go/ui"
 )
 
@@ -224,6 +227,19 @@ func main() {
 	iEcho("Identifying your device...")
 	productName, err := fastboot.GetProduct()
 
+	// OnePlus uses the same board name for every device.  Need to let user select
+	if productName == "QC_Reference_Phone" {
+		menu := wmenu.NewMenu("Detected OnePlus device.  Select which device: ")
+		menu.Action(func(opts []wmenu.Opt) error { productName = opts[0].Text; return nil })
+		menu.Option("OnePlus 5", nil, true, nil)
+		menu.Option("OnePlus 2", nil, false, nil)
+		menu.Option("OnePlus 1", nil, false, nil)
+		err := menu.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	if err != nil {
 		eEcho("Failed to get device product info: " + err.Error())
 		exit(ErrorFastboot)
@@ -235,11 +251,11 @@ func main() {
 	if currDevice.Common_name != "" {
 		fmt.Printf("Device and config found, using %s (%s) configuration and endpoints\n", currDevice.Common_name, currDevice.Product_name)
 	} else {
-		eEcho("Device config not found lol! Bye.")
+		eEcho("Device config not found! Bye.")
 		exit(1)
 	}
 
-	waitForOpKey("Press enter to continue with bootloader checks") // not sure about the sentence here
+	waitForOpKey("Press enter to continue with bootloader unlock check. Unlocking will wipe device if first time and will require restart.") // not sure about the sentence here
 
 	unlocked, err := fastboot.Unlocked()
 	if err != nil {
@@ -256,6 +272,13 @@ func main() {
 		fastboot.Reboot()
 		iEcho(MsgUnlockSuccess)
 		exit(SuccessBootloaderUnlocked)
+	}
+
+	// Check if there is any other extra files we need to get
+	if currDevice.Extra_file != "" && currDevice.Extra_url != "" {
+		if _, err := os.Stat(currDevice.Extra_file); os.IsNotExist(err) { // If file missing, download
+			remote.DownloadURL(currDevice.Extra_url)
+		}
 	}
 
 	// Request nethunter OS
@@ -324,6 +347,15 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
+	// Transfer any extra files we need to flash
+	if currDevice.Extra_file != "" {
+		iEcho("Transferring extra zip (firmware/etc) to your device...")
+		if err = adb.PushFg(currDevice.Extra_file, "/sdcard"); err != nil {
+			eEcho("Failed to push extra update zip to device: " + err.Error())
+			exit(ErrorAdb)
+		}
+	}
+
 	// Transfer ROM to sdcard then install in TWRP
 	iEcho("Transferring the NethunterOS zip to your device...")
 	if err = adb.PushFg(currDevice.Nhos_file, "/sdcard"); err != nil {
@@ -345,6 +377,17 @@ func main() {
 		exit(ErrorAdb)
 	}
 
+	// Extras should be installed first (like Device firmware or baseband)
+	// Otherwise NHOS will fail
+	if currDevice.Extra_file != "" {
+		iEcho("Installing extra zip (firmware/baseband/etc) please keep your device connected...")
+		err = adb.Shell("twrp install /sdcard/" + currDevice.Extra_file)
+		if err != nil {
+			eEcho("Failed to flash extra update zip: " + err.Error())
+			exit(ErrorTWRP)
+		}
+	}
+
 	// Start installer for ROM, Gapps, then Nethunter chroot & apps
 	iEcho("Installing NethunterOS please keep your device connected...")
 	err = adb.Shell("twrp install /sdcard/" + currDevice.Nhos_file)
@@ -353,11 +396,28 @@ func main() {
 		exit(ErrorTWRP)
 	}
 
-	iEcho("Installing Gapps...")
-	err = adb.Shell("twrp install /sdcard/" + currDevice.Gapps_file)
+	// Install gapps?
+	actFunc := func(opts []wmenu.Opt) error {
+		if opts[0].ID == 0 {
+			iEcho("Installing Gapps...")
+			err = adb.Shell("twrp install /sdcard/" + currDevice.Gapps_file)
+			if err != nil {
+				eEcho("Failed to flash Google Apps: " + err.Error())
+				exit(ErrorTWRP)
+			}
+		}
+		if opts[0].ID == 1 {
+			fmt.Println("Skipping Gapps install")
+		}
+		return nil
+	}
+
+	menu := wmenu.NewMenu("Install Gapps?") // The yes or no question
+	menu.Action(actFunc)
+	menu.IsYesNo(0)
+	err = menu.Run()
 	if err != nil {
-		eEcho("Failed to flash Google Apps: " + err.Error())
-		exit(ErrorTWRP)
+		log.Fatal(err)
 	}
 
 	// Pause a bit after install or TWRP gets confused
@@ -384,7 +444,8 @@ func main() {
 		exit(ErrorAdb)
 	}
 	// Wait for user to select install form usb option
-	waitForOpKey("Reboot if finished.\nGo through steps of enabling ADB again.\nAccept RSA key.\nPress enter when ready")
+	iEcho(MsgReenable)
+	waitForOpKey("Press enter when ADB is reenabled")
 
 	verifyAdbStatusOrAbort(&adb)
 
@@ -404,6 +465,9 @@ func main() {
 		eEcho("Failed to boot TWRP: " + err.Error())
 		exit(ErrorTWRP)
 	}
+
+	// Wait for TWRP
+	waitForOpKey("Press enter when TWRP is fully loaded & ready")
 
 	time.Sleep(20000 * time.Millisecond) // maybe add waitForOpKey here also?
 	iEcho("Installing Nethunter filesystem, please keep your device connected...")
