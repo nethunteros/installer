@@ -232,7 +232,6 @@ func main() {
 		menu := wmenu.NewMenu("Detected OnePlus device.  Select which device: ")
 		menu.Action(func(opts []wmenu.Opt) error { productName = opts[0].Text; return nil })
 		menu.Option("OnePlus 5", nil, true, nil)
-		menu.Option("OnePlus 2", nil, false, nil)
 		menu.Option("OnePlus 1", nil, false, nil)
 		err := menu.Run()
 		if err != nil {
@@ -479,7 +478,7 @@ func main() {
 
 	time.Sleep(30000 * time.Millisecond) // 30 seconds // maybe add waitForOpKey here also?
 
-	iEcho(MsgSuccess)
+	iEcho(MsgFinished)
 	err = adb.Reboot("")
 	if err != nil {
 		eEcho("Failed to reboot: " + err.Error())

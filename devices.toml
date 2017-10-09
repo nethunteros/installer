@@ -36,6 +36,23 @@ twrp_url = "https://dl.twrp.me/bullhead/twrp-3.1.1-0-bullhead.img"
 
 [[device]]
 
+common_name = "OnePlus 1"
+product_name = "OnePlus 1"
+
+nhos_file = "lineage-14.1-20171009-UNOFFICIAL-bacon.zip"
+nhos_url = "https://build.nethunter.com/installer/oneplus1/lineage-14.1-20171009-UNOFFICIAL-bacon.zip"
+
+nhfs_file = "update-nethunter-generic-armhf-20171007_215146.zip"
+nhfs_url = "https://build.nethunter.com/installer/generic/update-nethunter-generic-armhf-20171007_215146.zip"
+
+gapps_file = "open_gapps-arm-7.1-mini-20171007.zip"
+gapps_url = "https://build.nethunter.com/installer/gapps/open_gapps-arm-7.1-mini-20171007.zip"
+
+twrp_file = "twrp-3.1.1-0-bullhead.img"
+twrp_url = "https://dl.twrp.me/bullhead/twrp-3.1.1-0-bullhead.img"
+
+[[device]]
+
 common_name = "OnePlus 5"
 product_name = "OnePlus 5"
 

@@ -142,3 +142,11 @@ Please reenable ADB one more time to flash the filesystem to device.
         USB Debugging for your computer's RSA key fingerprint
 
 `
+const MsgFinished = `
+All done!  
+
+Run the Nethunter app first to discovery chroot.  Make sure to grant super su
+permissions.
+
+Terminal 
+`
